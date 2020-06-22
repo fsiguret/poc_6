@@ -53,35 +53,34 @@ exports.changeSauce = (req, res, next) => {
 };
 
 exports.likeOrDislikeSauce = (req, res, next) => {
-    console.log(req.body)
-    Sauce.findOne({ _id: req.params.id })
-        .then(sauce => {
-            if(req.body.like === 1) {
-                Sauce.updateOne({ _id: req.params.id }, {
-                    _id: req.params.id,
-                    likes: sauce.usersLiked.length + 1 ,
-                    $push : {usersLiked: req.body.userId}
-                })
-                    .then(() => res.status(200).json({message: 'Vous avez aimé !'}));
-            }
-            if (req.body.like === -1) {
-                Sauce.updateOne({ _id: req.params.id }, {
-                    _id: req.params.id,
-                    dislikes: sauce.usersDisliked.length + 1,
-                    $push : {usersDisliked: req.body.userId}
-                })
-                    .then(() => res.status(200).json({message: "Vous n'aimez pas !"}));
-            }
-            if(req.body.like === 0) {
-                Sauce.updateOne({ _id: req.params.id }, {
-                    _id: req.params.id,
-                    dislikes: sauce.usersDisliked.length + 1,
-                    likes: sauce.usersLiked.length + 1,
-                    $pull : {usersDisliked: req.body.userId, usersLiked: req.body.userId}
-                })
-                    .then(() => res.status(200).json({message: "Vous n'avez plus d'avis !"}));
-            }
+
+    const isLike = parseInt(req.body.like, 10);
+
+    if(isLike === 1) {
+        Sauce.updateOne({ _id: req.params.id }, {
+            _id: req.params.id,
+            $push : {usersLiked: req.body.userId},
+            $inc: {likes: isLike},
         })
+            .then(() => res.status(200).json({message: 'Vous avez aimé !'}));
+    }
+    if (isLike === -1) {
+        Sauce.updateOne({ _id: req.params.id }, {
+            _id: req.params.id,
+            $push : {usersDisliked: req.body.userId},
+            $inc: {dislikes: 1},
+        })
+            .then(() => res.status(200).json({message: "Vous n'aimez pas !"}));
+    }
+    if(isLike === 0) {
+        Sauce.updateOne({ _id: req.params.id }, {
+            _id: req.params.id,
+            $pull : {usersDisliked: req.body.userId, usersLiked: req.body.userId},
+            dislikes: isLike,
+            likes: isLike
+        })
+            .then(() => res.status(200).json({message: "Vous n'avez plus d'avis !"}));
+    }
 }
 
 exports.deleteSauce = (req, res, next) => {
