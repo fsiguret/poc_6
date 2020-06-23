@@ -31,6 +31,7 @@ exports.addSauce = (req, res, next) => {
 
 exports.changeSauce = (req, res, next) => {
 
+    //à changer (try catch)
     const validJson = (function (req) {
         try {
             return JSON.parse(req);
@@ -64,8 +65,8 @@ exports.changeSauce = (req, res, next) => {
 };
 
 exports.likeOrDislikeSauce = (req, res, next) => {
-
     const isLike = parseInt(req.body.like, 10);
+
     Sauce.findOne({ _id: req.params.id })
         .then(sauce => {
             if(isLike === 1) {
