@@ -6,7 +6,7 @@ const middleware = (req, res, next) => {
         userId: Joi.string().regex(/^[a-zA-Z0-9]+$/).required(),
         name: Joi.string().alphanum().min(3).max(30).required(),
         manufacturer: Joi.string().alphanum().min(3).max(30).required(),
-        description: Joi.string().regex(/^[a-zA-Z0-9?!;:. ]{1,255}$/).required(),
+        description: Joi.string().regex(/^[a-zA-Z0-9?!;:.' ]{1,255}$/).required(),
         mainPepper: Joi.string().alphanum().min(3).max(30).required(),
         heat: Joi.number().min(1).max(10).required(),
     });
