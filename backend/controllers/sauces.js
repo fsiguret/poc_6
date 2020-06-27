@@ -39,10 +39,10 @@ exports.changeSauce = (req, res, next) => {
                     .catch(error => res.status(500).json({ error }));
 
             } else {
-
                 const fileName = sauce.imageUrl.split('/images/')[1];
 
                 fs.unlink(`images/${fileName}`, () => {
+
                     Sauce.updateOne({ _id : req.params.id },
                         {   ...JSON.parse(req.body.sauce),
                             _id: req.params.id,
@@ -51,7 +51,9 @@ exports.changeSauce = (req, res, next) => {
                         .then(() => {
                             res.status(201).json({message: "Sauce modifiée avec changement d'image"});
                         })
-                        .catch(error => res.status(500).json({ error }));
+                        .catch(error => {
+                            res.status(500).json({ error });
+                        });
                 });
             }
         })
@@ -59,8 +61,10 @@ exports.changeSauce = (req, res, next) => {
 }
 
 exports.likeOrDislikeSauce = (req, res, next) => {
+
     const isLike = parseInt(req.body.like, 10);
     const userId = req.body.userId;
+
     Sauce.findOne({ _id: req.params.id })
         .then(sauce => {
             switch(isLike) {
