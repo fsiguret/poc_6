@@ -25,5 +25,8 @@ app.use(bodyParser.json());
 app.use('/images', express.static(path.join(__dirname, 'images')));
 app.use('/api/auth', userRoutes);
 app.use('/api/sauces', sauceRoutes);
+app.all(/.*/, function (req, res, next) {
+   res.status(404).send("Désolé, cette adresse n'existe pas.");
+});
 
 module.exports = app;

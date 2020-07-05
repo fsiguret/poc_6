@@ -7,7 +7,7 @@ const middleware = (req, res, next) => {
     });
     Joi.validate(req.body, schema,(err, value) => {
         if(err) {
-            res.status(422).json({err});
+            res.status(422).send(`${err}`);
         } else {
             next();
         }

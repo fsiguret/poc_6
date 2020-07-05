@@ -2,6 +2,8 @@ const User = require('../models/Users');
 const bcrypt = require('bcrypt');
 const jwToken = require('jsonwebtoken');
 
+const privateKey = 'DEV_KEY'; //change this for production.
+
 exports.signup = (req, res, next) => {
     bcrypt.hash(req.body.password, 10)
         .then(hash => {
@@ -10,10 +12,10 @@ exports.signup = (req, res, next) => {
                 password: hash
             });
             user.save()
-                .then(() => res.status(201).json({ message: "Utilisateur créé !"}))
-                .catch(error => res.status(400).json({ error }));
+                .then(() => res.status(201).send("Utilisateur créé !"))
+                .catch(() => res.status(400).send("L'utilisateur n'a pas pu être enregistré ou existe déjà."));
         })
-        .catch(error => res.status(400).json({ error }));
+        .catch(() => res.status(400).send("Une erreur c'est produite lors du hash."));
 };
 
 exports.login = (req, res, next) => {
@@ -26,13 +28,16 @@ exports.login = (req, res, next) => {
                             userId: user._id,
                             token: jwToken.sign(
                                 { userId: user._id },
-                                'PROD_KEY', //change this for production.
-                                { expiresIn: '24h' }
-                            )
+                                privateKey,
+                                { expiresIn: '1h'  }
+                            ),
+                            message: "Connection réussie !"
                         });
+                    } else {
+                        res.status(400).send("mot de passe érroné.");
                     }
                 })
-                .catch(error => res.status(400).json({ error }));
+                .catch(() => res.status(400).send("Une erreur c'est produite lors de la comparaison des mots de passe."));
         })
-        .catch(error => res.status(404).json({ error }));
+        .catch(() => res.status(404).send("L'utilisateur n'éxiste pas." ));
 };
