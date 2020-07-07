@@ -83,29 +83,37 @@ exports.likeOrDislikeSauce = (req, res, next) => {
             if(req.body.userId && req.body.like){
                 switch(isLike) {
                     case 1 :
-                        if(!sauce.usersLiked.includes(userId)){
-                            Sauce.updateOne({ _id: req.params.id }, {
-                                _id: req.params.id,
-                                $push : {usersLiked: userId},
-                                likes: sauce.usersLiked.length + 1
-                            })
-                                .then(() => res.status(201).json({message:'Vous avez aimé !'}))
-                                .catch(() => res.status(500).send("Une erreur c'est produite lors du like"));
-                        }else {
-                            res.status(403).send("vous aimez déjà cette sauce.");
+                        if(sauce.usersDisliked.includes(userId)) {
+                            res.status(403).send("vous avez déjà un avis pour cette sauce.");
+                        } else {
+                            if (!sauce.usersLiked.includes(userId)) {
+                                Sauce.updateOne({_id: req.params.id}, {
+                                    _id: req.params.id,
+                                    $push: {usersLiked: userId},
+                                    likes: sauce.usersLiked.length + 1
+                                })
+                                    .then(() => res.status(201).json({message: 'Vous avez aimé !'}))
+                                    .catch(() => res.status(500).send("Une erreur c'est produite lors du like"));
+                            } else {
+                                res.status(403).send("vous aimez déjà cette sauce.");
+                            }
                         }
                         break;
                     case -1 :
-                        if(!sauce.usersDisliked.includes(userId)) {
-                            Sauce.updateOne({ _id: req.params.id }, {
-                                _id: req.params.id,
-                                $push : {usersDisliked: userId},
-                                dislikes: sauce.usersDisliked.length + 1
-                            })
-                                .then(() => res.status(201).json({message:"Vous n'aimez pas !"}))
-                                .catch(() => res.status(500).send("Une erreur c'est produite lors du dislike"));
+                        if(sauce.usersLiked.includes(userId)){
+                            res.status(403).send("vous avez déjà un avis pour cette sauce");
                         }else {
-                            res.status(403).send("vous détestez déjà cette sauce.");
+                            if (!sauce.usersDisliked.includes(userId)) {
+                                Sauce.updateOne({_id: req.params.id}, {
+                                    _id: req.params.id,
+                                    $push: {usersDisliked: userId},
+                                    dislikes: sauce.usersDisliked.length + 1
+                                })
+                                    .then(() => res.status(201).json({message: "Vous n'aimez pas !"}))
+                                    .catch(() => res.status(500).send("Une erreur c'est produite lors du dislike"));
+                            } else {
+                                res.status(403).send("vous détestez déjà cette sauce.");
+                            }
                         }
                         break;
                     case 0 :
@@ -125,10 +133,12 @@ exports.likeOrDislikeSauce = (req, res, next) => {
                             })
                                 .then(() => res.status(201).json({message:"Vous n'avez plus d'avis !"}))
                                 .catch(() => res.status(500).send("Une erreur c'est produite lors du changement d'avis"));
+                        } else {
+                            res.status(400).send("vous n'avez pas d'avis à retirer.");
                         }
                         break;
                     default :
-                        new Error("You cannot like or dislike");
+                        res.status(400).send('like doit être "1", "0" ou "-1"');
                 }
             } else {
                 res.status(404).send("userId ou/et like inexistant");
