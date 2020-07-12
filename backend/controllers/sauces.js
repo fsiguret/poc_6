@@ -36,9 +36,6 @@ exports.addSauce = (req, res, next) => {
         }
         res.status(400).send("La syntaxe de la requête est erronée. multiform-data attendu: image(file) et sauce(text)");
     }
-
-
-
 };
 
 exports.changeSauce = (req, res, next) => {
@@ -76,6 +73,7 @@ exports.changeSauce = (req, res, next) => {
 exports.likeOrDislikeSauce = (req, res, next) => {
 
     const isLike = parseInt(req.body.like, 10);
+
     const userId = req.body.userId;
 
     Sauce.findOne({ _id: req.params.id })
