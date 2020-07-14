@@ -39,39 +39,41 @@ exports.addSauce = (req, res, next) => {
 };
 
 exports.changeSauce = (req, res, next) => {
+    let isJson = ((!(req.file === null || req.file === undefined)));
+
     Sauce.findOne({ _id: req.params.id })
         .then(sauce => {
-            let isJson = ((!(req.file.filename === null || req.file.filename === undefined)));
-
             if(!isJson && req.body.userId === sauce.userId) {
 
-                Sauce.updateOne({ _id : req.params.id }, {...req.body, _id: req.params.id})
+                Sauce.updateOne({ _id : req.params.id }, {...req.body})
                     .then(() => res.status(201).json({message: "Sauce modifiée sans changement d'image"}))
                     .catch(() => res.status(500).send("La sauce n'a pas pu être modifiée"));
 
             } else if(isJson){
+                let bodySauce = JSON.parse(req.body.sauce);
 
-                const fileName = sauce.imageUrl.split('/images/')[1];
+                if(bodySauce.userId === sauce.userId) {
 
-                fs.unlink(`images/${fileName}`, () => {
-                    Sauce.updateOne({ _id : req.params.id },
-                        {   ...JSON.parse(req.body.sauce),
-                            _id: req.params.id,
-                            imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}`
-                        })
-                        .then(() => {
-                            res.status(201).json({message: "Sauce modifiée avec changement d'image"});
-                        })
-                        .catch(() => {
-                            fs.unlink(`images/${req.file.filename}`, () => {});
-                            res.status(500).send("La sauce n'a pas pu être modifiée");
-                        });
-                });
+                    const fileName = sauce.imageUrl.split('/images/')[1];
 
-            } else {
-                if(isJson){
+                    fs.unlink(`images/${fileName}`, () => {
+                        Sauce.updateOne({ _id : req.params.id },
+                            {   ...bodySauce,
+                                imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}`
+                            })
+                            .then(() => {
+                                res.status(201).json({message: "Sauce modifiée avec changement d'image"});
+                            })
+                            .catch(() => {
+                                fs.unlink(`images/${req.file.filename}`, () => {});
+                                res.status(500).send("La sauce n'a pas pu être modifiée");
+                            });
+                    });
+                } else {
                     fs.unlink(`images/${req.file.filename}`, () => {});
+                    res.status(403).send("Vous devez vous connectez sur le bon compte pour pouvoir modifier cette sauce.");
                 }
+            } else {
                 res.status(403).send("Vous devez vous connectez sur le bon compte pour pouvoir modifier cette sauce.");
             }
         })
