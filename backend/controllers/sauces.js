@@ -14,7 +14,7 @@ exports.getOneSauce = (req, res, next) => {
 };
 
 exports.addSauce = (req, res, next) => {
-    if(req.body?.sauce !== undefined) {
+    if(req.body.sauce !== undefined) {
 
         const sauceObject = JSON.parse(req.body.sauce);
 
@@ -39,19 +39,21 @@ exports.addSauce = (req, res, next) => {
 };
 
 exports.changeSauce = (req, res, next) => {
-    Sauce.findOne({_id: req.params.id})
+    Sauce.findOne({ _id: req.params.id })
         .then(sauce => {
-            if(req.file?.filename === undefined) {
+            let isJson = ((!(req.file.filename === null || req.file.filename === undefined)));
+
+            if(!isJson && req.body.userId === sauce.userId) {
 
                 Sauce.updateOne({ _id : req.params.id }, {...req.body, _id: req.params.id})
                     .then(() => res.status(201).json({message: "Sauce modifiée sans changement d'image"}))
                     .catch(() => res.status(500).send("La sauce n'a pas pu être modifiée"));
 
-            } else {
+            } else if(isJson){
+
                 const fileName = sauce.imageUrl.split('/images/')[1];
 
                 fs.unlink(`images/${fileName}`, () => {
-
                     Sauce.updateOne({ _id : req.params.id },
                         {   ...JSON.parse(req.body.sauce),
                             _id: req.params.id,
@@ -65,95 +67,88 @@ exports.changeSauce = (req, res, next) => {
                             res.status(500).send("La sauce n'a pas pu être modifiée");
                         });
                 });
+
+            } else {
+                if(isJson){
+                    fs.unlink(`images/${req.file.filename}`, () => {});
+                }
+                res.status(403).send("Vous devez vous connectez sur le bon compte pour pouvoir modifier cette sauce.");
             }
         })
-        .catch(() => res.status(404).send("Sauce non trouvée."));
+        .catch(() => {
+            res.status(404).send("Sauce non trouvée.");
+        });
 }
 
 exports.likeOrDislikeSauce = (req, res, next) => {
 
-    const isLike = parseInt(req.body.like, 10);
-
+    const sauceId = req.params.id;
     const userId = req.body.userId;
+    const like = parseInt(req.body.like, 10);
 
-    Sauce.findOne({ _id: req.params.id })
+    Sauce.findOne({ _id: sauceId})
         .then(sauce => {
-            if(req.body.userId && req.body.like){
-                switch(isLike) {
-                    case 1 :
-                        if(sauce.usersDisliked.includes(userId)) {
-                            res.status(403).send("vous avez déjà un avis pour cette sauce.");
-                        } else {
-                            if (!sauce.usersLiked.includes(userId)) {
-                                Sauce.updateOne({_id: req.params.id}, {
-                                    _id: req.params.id,
-                                    $push: {usersLiked: userId},
-                                    likes: sauce.usersLiked.length + 1
-                                })
-                                    .then(() => res.status(201).json({message: 'Vous avez aimé !'}))
-                                    .catch(() => res.status(500).send("Une erreur c'est produite lors du like"));
-                            } else {
-                                res.status(403).send("vous aimez déjà cette sauce.");
-                            }
-                        }
-                        break;
-                    case -1 :
-                        if(sauce.usersLiked.includes(userId)){
-                            res.status(403).send("vous avez déjà un avis pour cette sauce");
-                        }else {
-                            if (!sauce.usersDisliked.includes(userId)) {
-                                Sauce.updateOne({_id: req.params.id}, {
-                                    _id: req.params.id,
-                                    $push: {usersDisliked: userId},
-                                    dislikes: sauce.usersDisliked.length + 1
-                                })
-                                    .then(() => res.status(201).json({message: "Vous n'aimez pas !"}))
-                                    .catch(() => res.status(500).send("Une erreur c'est produite lors du dislike"));
-                            } else {
-                                res.status(403).send("vous détestez déjà cette sauce.");
-                            }
-                        }
-                        break;
-                    case 0 :
-                        if(sauce.usersLiked.includes(userId)) {
-                            Sauce.updateOne({ _id: req.params.id }, {
-                                _id: req.params.id,
-                                $pull : {usersLiked: userId},
-                                likes: sauce.usersLiked.length - 1
-                            })
-                                .then(() => res.status(201).json({message:"Vous n'avez plus d'avis !"}))
-                                .catch(() => res.status(500).send("Une erreur c'est produite lors du changement d'avis"));
-                        }else if(sauce.usersDisliked.includes(userId)) {
-                            Sauce.updateOne({ _id: req.params.id }, {
-                                _id: req.params.id,
-                                $pull : {usersDisliked: userId},
-                                dislikes: sauce.usersDisliked.length - 1
-                            })
-                                .then(() => res.status(201).json({message:"Vous n'avez plus d'avis !"}))
-                                .catch(() => res.status(500).send("Une erreur c'est produite lors du changement d'avis"));
-                        } else {
-                            res.status(400).send("vous n'avez pas d'avis à retirer.");
-                        }
-                        break;
-                    default :
-                        res.status(400).send('like doit être "1", "0" ou "-1"');
+            if(like >= 1) {
+                if(!sauce.usersLiked.includes(userId) && !sauce.usersDisliked.includes(userId)) {
+                    Sauce.updateOne({ _id: sauceId }, {
+                        $push: {usersLiked: userId},
+                        $inc: {likes: 1}
+                    })
+                        .then(() => res.status(201).json({ message: "Vous avez aimé la sauce !" }))
+                        .catch(() => res.status(500).send("Il c'est produit une erreur lors du Like de la sauce"));
+                }else {
+                    res.status(400).send("Vous avez déjà un avis pour cette sauce.");
                 }
-            } else {
-                res.status(404).send("userId ou/et like inexistant");
+            } else if (like <= -1 ) {
+                if(!sauce.usersLiked.includes(userId) && !sauce.usersDisliked.includes(userId)) {
+                    Sauce.updateOne({ _id: sauceId }, {
+                        $push: {usersDisliked: userId},
+                        $inc: {dislikes: 1}
+                    })
+                        .then(() => res.status(201).json({ message: "Vous n'aimez pas la sauce !" }))
+                        .catch(() => res.status(500).send("Il c'est produit une erreur lors du dislike de la sauce"));
+                }else {
+                    res.status(400).send("Vous avez déjà un avis pour cette sauce.");
+                }
+            } else if (Object.is(like, 0)) {
+                if(sauce.usersLiked.includes(userId)) {
+                    Sauce.updateOne({ _id: sauceId }, {
+                        $pull: {usersLiked: userId},
+                        $inc: {likes: -1}
+                    })
+                        .then(() => res.status(201).json({ message: "Vous n'avez plus d'avis !" }))
+                        .catch(() => res.status(500).send("Il c'est produit une erreur lors du changement d'avis."));
+
+                } else if(sauce.usersDisliked.includes(userId)) {
+                    Sauce.updateOne({ _id: sauceId }, {
+                        $pull: {usersDisliked: userId},
+                        $inc: {dislikes: -1}
+                    })
+                        .then(() => res.status(201).json({ message: "Vous n'avez plus d'avis !" }))
+                        .catch(() => res.status(500).send("Il c'est produit une erreur lors du changement d'avis."));
+                } else {
+                    res.status(400).send("Vous n'avez déjà pas d'avis.");
+                }
             }
         })
-        .catch(() => res.status(404).send("La sauce n'existe pas."));
-}
+        .catch(() => res.status(404).send("Cette sauce n'éxiste pas."));
+};
 
 exports.deleteSauce = (req, res, next) => {
     Sauce.findOne({ _id: req.params.id })
         .then(sauce => {
-            const fileName = sauce.imageUrl.split('/images/')[1];
-            fs.unlink(`images/${fileName}`, () => {
-                Sauce.deleteOne({ _id: sauce.id })
-                    .then(() => res.status(200).json({message:'Sauce supprimée'}))
-                    .catch(() => res.status(500).send("La sauce n'a pas pu être supprimée."));
-            })
+            if (req.body.userId === sauce.userId) {
+
+                const fileName = sauce.imageUrl.split('/images/')[1];
+
+                fs.unlink(`images/${fileName}`, () => {
+                    Sauce.deleteOne({ _id: sauce.id })
+                        .then(() => res.status(200).json({message:'Sauce supprimée'}))
+                        .catch(() => res.status(500).send("La sauce n'a pas pu être supprimée."));
+                });
+            } else {
+                res.status(401).send("Vous devez vous connectez sur le bon compte pour pouvoir supprimer cette sauce.");
+            }
         })
         .catch(() => res.status(404).send("La sauce n'existe pas."));
 };
