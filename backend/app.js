@@ -8,7 +8,7 @@ const sauceRoutes = require('./routes/sauces');
 
 const app = express();
 
-mongoose.connect('mongodb+srv://florian:HeadShot18700@cluster0-zvi1m.mongodb.net/piquante?retryWrites=true&w=majority',
+mongoose.connect('mongodb+srv://user:8Tt6AxnKVLJP7xuh@cluster0-zvi1m.mongodb.net/piquante?retryWrites=true&w=majority',
     { useNewUrlParser: true, useUnifiedTopology: true, useCreateIndex: true })
     .then(() => console.log('Connexion à MongoDB réussie !'))
     .catch(() => console.log('Connexion à MongoDB échouée !'));

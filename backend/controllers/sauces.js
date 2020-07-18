@@ -40,10 +40,13 @@ exports.addSauce = (req, res, next) => {
 
 exports.changeSauce = (req, res, next) => {
     let isJson = ((!(req.file === null || req.file === undefined)));
+    let errorConnexion = true;
 
     Sauce.findOne({ _id: req.params.id })
         .then(sauce => {
             if(!isJson && req.body.userId === sauce.userId) {
+
+                errorConnexion = false;
 
                 Sauce.updateOne({ _id : req.params.id }, {...req.body})
                     .then(() => res.status(201).json({message: "Sauce modifiée sans changement d'image"}))
@@ -55,6 +58,8 @@ exports.changeSauce = (req, res, next) => {
                 if(bodySauce.userId === sauce.userId) {
 
                     const fileName = sauce.imageUrl.split('/images/')[1];
+
+                    errorConnexion = false;
 
                     fs.unlink(`images/${fileName}`, () => {
                         Sauce.updateOne({ _id : req.params.id },
@@ -69,18 +74,19 @@ exports.changeSauce = (req, res, next) => {
                                 res.status(500).send("La sauce n'a pas pu être modifiée");
                             });
                     });
-                } else {
-                    fs.unlink(`images/${req.file.filename}`, () => {});
-                    res.status(403).send("Vous devez vous connectez sur le bon compte pour pouvoir modifier cette sauce.");
                 }
-            } else {
+            }
+            if(errorConnexion) {
+                if(isJson) {
+                    fs.unlink(`images/${req.file.filename}`, () => {});
+                }
                 res.status(403).send("Vous devez vous connectez sur le bon compte pour pouvoir modifier cette sauce.");
             }
         })
         .catch(() => {
             res.status(404).send("Sauce non trouvée.");
         });
-}
+};
 
 exports.likeOrDislikeSauce = (req, res, next) => {
 
@@ -145,11 +151,11 @@ exports.deleteSauce = (req, res, next) => {
 
                 fs.unlink(`images/${fileName}`, () => {
                     Sauce.deleteOne({ _id: sauce.id })
-                        .then(() => res.status(200).json({message:'Sauce supprimée'}))
+                        .then(() => res.status(200).json({ message:'Sauce supprimée' }))
                         .catch(() => res.status(500).send("La sauce n'a pas pu être supprimée."));
                 });
             } else {
-                res.status(401).send("Vous devez vous connectez sur le bon compte pour pouvoir supprimer cette sauce.");
+                res.status(403).send("Vous devez vous connectez sur le bon compte pour pouvoir supprimer cette sauce.");
             }
         })
         .catch(() => res.status(404).send("La sauce n'existe pas."));
