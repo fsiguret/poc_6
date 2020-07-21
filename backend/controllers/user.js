@@ -12,7 +12,7 @@ exports.signup = (req, res, next) => {
                 password: hash
             });
             user.save()
-                .then(() => res.status(201).send("Utilisateur créé !"))
+                .then(() => res.status(201).json({message: "Utilisateur créé !"}))
                 .catch(() => res.status(400).send("L'utilisateur n'a pas pu être enregistré ou existe déjà."));
         })
         .catch(() => res.status(400).send("Une erreur c'est produite lors du hash."));
